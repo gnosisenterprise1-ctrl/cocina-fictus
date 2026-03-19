@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cocina Fictus — El Sabor Tradicional de Mérida</title>
+  <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      --bg: #06080c; --surface: #0e121a; --accent: #c5a059; --text: #e2e8f0; --muted: #94a3b8;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    
+    /* HEADER & HERO */
+    header { height: 100vh; background: linear-gradient(rgba(0,0,0,0.5), var(--bg)), url('hero_bg.png') center/cover; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 20px; }
+    h1 { font-family: 'Italiana', serif; font-size: clamp(3rem, 10vw, 6rem); color: var(--accent); margin-bottom: 10px; }
+    .hero-sub { font-size: 1.1rem; letter-spacing: 3px; text-transform: uppercase; color: #fff; opacity: 0.8; margin-bottom: 30px; }
+    .scroll-btn { display: inline-block; padding: 15px 40px; border: 1px solid rgba(197, 160, 89, 0.4); color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; transition: 0.4s; }
+    .scroll-btn:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+
+    /* MENU SECTION */
+    section { padding: 80px 5%; max-width: 1200px; margin: 0 auto; }
+    .section-title { font-family: 'Italiana', serif; font-size: 2.5rem; color: #fff; text-align: center; margin-bottom: 50px; }
+    
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; }
+    .food-card { background: var(--surface); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); transition: 0.5s; position: relative; }
+    .food-card:hover { transform: translateY(-5px); border-color: rgba(197, 160, 89, 0.3); }
+    .food-img { width: 100%; height: 250px; object-fit: cover; }
+    .food-info { padding: 25px; }
+    .food-name { font-family: 'Italiana', serif; font-size: 1.4rem; color: #fff; margin-bottom: 5px; }
+    .food-desc { font-size: 0.85rem; color: var(--muted); margin-bottom: 15px; min-height: 40px; }
+    .food-price { font-size: 1.2rem; font-weight: 800; color: var(--accent); display: flex; justify-content: space-between; align-items: center; }
+    
+    .add-btn { background: none; border: 1px solid var(--accent); color: var(--accent); padding: 8px 18px; border-radius: 2px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+    .add-btn:hover { background: var(--accent); color: #000; }
+    .add-btn:active { transform: scale(0.95); }
+
+    /* FLOATING CART */
+    .cart-summary { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: #fff; color: #000; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 20px 50px rgba(0,0,0,0.8); z-index: 1000; display: none; }
+    .cart-total { font-weight: 600; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
+    .order-btn { background: #000; color: #fff; border: 1px solid #000; padding: 10px 20px; font-weight: 600; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; cursor: pointer; transition: 0.3s; }
+    .order-btn:hover { background: #333; }
+
+    /* MODAL CART */
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1001; display: none; padding: 40px 20px; }
+    .modal-content { background: var(--surface); max-width: 500px; margin: 0 auto; padding: 40px; border: 1px solid rgba(197, 160, 89, 0.2); max-height: 80vh; overflow-y: auto; }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .item-controls { display: flex; align-items: center; gap: 15px; }
+    .qty-btn { background: none; border: 1px solid var(--accent); color: var(--accent); width: 25px; height: 25px; border-radius: 50%; cursor: pointer; }
+
+    footer { padding: 40px 5%; text-align: center; color: var(--muted); font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05); }
+
+    @media(max-width: 768px) { h1 { font-size: 4rem; } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="hero-sub">Cocina Yucateca de Autor</div>
+  <h1>Cocina Fictus</h1>
+  <p style="color:rgba(255,255,255,0.7); max-width:500px; margin-bottom:40px;">La tradición de Mérida, elevada a una experiencia gourmet en la puerta de tu casa.</p>
+  <a href="#menu" class="scroll-btn">Ver el Menú</a>
+</header>
+
+<section id="menu">
+  <h2 class="section-title">Nuestra Carta</h2>
+  <div class="menu-grid">
+    
+    <div class="food-card" data-name="Queso Relleno" data-price="180">
+      <img src="queso_relleno.png" alt="Queso Relleno" class="food-img">
+      <div class="food-info">
+        <div class="food-name">Queso Relleno</div>
+        <div class="food-desc">Queso de bola (Edam) relleno de carne molida especial, k'ool blanco y salsa de tomate casera.</div>
+        <div class="food-price">
+          <span>$180.00</span>
+          <button class="add-btn" onclick="addToCart('Queso Relleno', 180)">Agregar +</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="food-card" data-name="Relleno Negro" data-price="160">
+      <img src="relleno_negro.png" alt="Relleno Negro" class="food-img">
+      <div class="food-info">
+        <div class="food-name">Relleno Negro</div>
+        <div class="food-desc">Tradicional pavo en salsa de chiles quemados con but (carne molida) y huevo cocido.</div>
+        <div class="food-price">
+          <span>$160.00</span>
+          <button class="add-btn" onclick="addToCart('Relleno Negro', 160)">Agregar +</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="food-card" data-name="Orden de Panuchos" data-price="120">
+      <img src="panuchos.png" alt="Panuchos" class="food-img">
+      <div class="food-info">
+        <div class="food-name">Orden de Panuchos (3)</div>
+        <div class="food-desc">Tortillas rellenas de frijol, pavo asado, lechuga, aguacate y cebolla morada curtida.</div>
+        <div class="food-price">
+          <span>$120.00</span>
+          <button class="add-btn" onclick="addToCart('Orden de Panuchos', 120)">Agregar +</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="cart-summary" id="cartSummary">
+  <div class="cart-total" id="totalDisplay">Total: $0.00</div>
+  <button class="order-btn" onclick="openOrderModal()">
+    <span>Ver Pedido</span>
+  </button>
+</div>
+
+<div class="modal" id="orderModal" onclick="closeModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <h2 style="font-family:'Italiana',serif; margin-bottom:20px; color:var(--accent);">Tu Pedido</h2>
+    <div id="cartItemsList"></div>
+    <div style="margin-top:30px;">
+      <div style="display:flex; justify-content:space-between; font-weight:800; font-size:1.2rem; margin-bottom:20px;">
+        <span>Total:</span>
+        <span id="modalTotal">$0.00</span>
+      </div>
+      <button class="order-btn" style="width:100%; justify-content:center; padding:18px;" onclick="sendToWhatsApp()">
+        <span>Enviar Pedido a WhatsApp</span>
+      </button>
+      <button style="width:100%; background:none; border:none; color:var(--muted); margin-top:15px; cursor:pointer;" onclick="toggleCartModal(false)">Seguir comprando</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p><strong>COCINA FICTUS</strong> — Mérida, Yucatán</p>
+  <p style="margin-top:10px;">Pedidos exclusivos por WhatsApp · Servicio a Domicilio disponible.</p>
+</footer>
+
+<script>
+  let cart = {};
+  const PHONE = "52999XXXXXXX"; // Número real de Cocina Fictus
+
+  // CONFIGURACIÓN DE FIREBASE (El cliente debe completar esto)
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  // Inicializar Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  function addToCart(name, price) {
+    if (cart[name]) {
+      cart[name].qty++;
+    } else {
+      cart[name] = { price, qty: 1 };
+    }
+    updateUI();
+  }
+
+  function updateUI() {
+    let total = 0;
+    let itemsCount = 0;
+    for (let name in cart) {
+      total += cart[name].price * cart[name].qty;
+      itemsCount += cart[name].qty;
+    }
+
+    document.getElementById('totalDisplay').innerText = `Total: $${total}.00`;
+    document.getElementById('modalTotal').innerText = `$${total}.00`;
+    document.getElementById('cartSummary').style.display = itemsCount > 0 ? 'flex' : 'none';
+
+    renderCartItems();
+  }
+
+  function renderCartItems() {
+    const list = document.getElementById('cartItemsList');
+    list.innerHTML = '';
+    for (let name in cart) {
+      const item = cart[name];
+      list.innerHTML += `
+        <div class="cart-item">
+          <div>
+            <div style="color:#fff; font-weight:600;">${name}</div>
+            <div style="color:var(--muted); font-size:0.8rem;">$${item.price} c/u</div>
+          </div>
+          <div class="item-controls">
+            <button class="qty-btn" onclick="changeQty('${name}', -1)">-</button>
+            <span>${item.qty}</span>
+            <button class="qty-btn" onclick="changeQty('${name}', 1)">+</button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  function changeQty(name, delta) {
+    cart[name].qty += delta;
+    if (cart[name].qty <= 0) delete cart[name];
+    updateUI();
+  }
+
+  function toggleCartModal(show) {
+    document.getElementById('orderModal').style.display = show ? 'flex' : 'none';
+  }
+
+  function openOrderModal() {
+    toggleCartModal(true);
+  }
+
+  function closeModal(e) {
+    toggleCartModal(false);
+  }
+
+  function sendToWhatsApp() {
+    let itemsText = '';
+    let total = 0;
+    let orderItems = [];
+    
+    for (let name in cart) {
+      itemsText += `- ${cart[name].qty}x ${name} ($${cart[name].price * cart[name].qty})\n`;
+      total += cart[name].price * cart[name].qty;
+      orderItems.push({ name, qty: cart[name].qty, price: cart[name].price });
+    }
+
+    const orderId = 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    const orderData = {
+      id: orderId,
+      items: orderItems,
+      total: total,
+      status: 'Recibido',
+      timestamp: new Date().toISOString(),
+      source: 'Web'
+    };
+
+    // Sincronización con Firebase (Real-Time)
+    db.ref('orders/' + orderId).set(orderData)
+      .then(() => console.log("Orden sincronizada online"))
+      .catch(err => console.error("Error de sincro:", err));
+
+    // Respaldo local
+    let orders = JSON.parse(localStorage.getItem('fictus_orders') || '[]');
+    orders.push(orderData);
+    localStorage.setItem('fictus_orders', JSON.stringify(orders));
+
+    const message = `Hola Cocina Fictus. Quisiera realizar el siguiente pedido (Cod: ${orderId}):\n\n${itemsText}\n*Total: $${total}.00*\n\nDirección de entrega: [Escribe tu calle y colonia aquí]`;
+    
+    window.open(`https://wa.me/${PHONE}?text=${encodeURIComponent(message)}`, '_blank');
+    
+    // Limpiar carrito tras pedido
+    cart = {};
+    updateUI();
+    toggleCartModal(false);
+  }
+</script>
+
+</body>
+</html>
